@@ -1,0 +1,621 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -160,
+        -60
+      ],
+      "id": "835cb370-f49d-4704-85cd-2d1f084474d1",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gL7jXI1nts8NMUvM",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a92e4cc7-4b25-4a5f-a1e7-aeba957cfb08",
+              "name": "emailBody",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "1a83cecd-36e4-45ff-8cee-1a5e0067ce66",
+              "name": "threadID",
+              "value": "={{ $json.threadId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        100,
+        -60
+      ],
+      "id": "15c405cd-562d-44a6-883d-29c4231a2554",
+      "name": "set contant"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Analyze the content of the following email and determine whether it is related to customer support. If the email pertains to any of the following topics, mark customerSupport as true; otherwise, mark it as false.\n\nCustomer Support Topics Include:\n\nQuestions about order status, tracking, or changes\nIssues with damaged or defective products\nRefund or return requests\nSubscription cancellations or adjustments\nTechnical issues with products, website, or app\nPayment or billing inquiries\nRequests for speaking with a support representative\nOutput:\nProvide the result in JSON format with a field named \"customerSupport\" set to true or false.",
+              "role": "system"
+            },
+            {
+              "content": "=here is the incoming email:  {{ $json.emailBody }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        280,
+        -60
+      ],
+      "id": "c84ebf22-b24d-4866-bc7a-bef1f5e57f08",
+      "name": "message evaluates",
+      "credentials": {
+        "openAiApi": {
+          "id": "vZ2wPywYOGvHyKJE",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('set contant').item.json.emailBody }}",
+        "options": {
+          "systemMessage": "You are an AI assistant integrated into an automated workflow using n8n.\n\n### Task:\nAnalyze or generate text based on the input data provided in the workflow (e.g., from a webhook, email, or database).\n\n### Input:\nThe incoming data will include a `text` field and possibly a `context` or `instruction` field. You must respond accordingly.\n\n### Instructions:\n1. If asked to summarize: provide a concise summary of the input text.\n2. If asked to classify: determine the category or sentiment of the message.\n3. If asked to reply: generate a professional and appropriate response.\n4. Always keep tone and content respectful, especially if dealing with sensitive topics.\n\n### Example Input (JSON):\n{\n  \"text\": \"I'm having trouble placing my order because the checkout keeps freezing.\",\n  \"instruction\": \"Generate a support reply.\"\n}\n\n### Your Output Should Be:\nA JSON object with one or more of the following fields:\n- `\"summary\"` – A brief overview of the text\n- `\"classification\"` – e.g., complaint, inquiry, feedback\n- `\"response\"` – A suggested reply to the user\n- `\"keywords\"` – Extracted key terms or topics\n\n### Output Example:\n{\n  \"summary\": \"User unable to complete checkout due to freezing interface.\",\n  \"classification\": \"technical issue\",\n  \"response\": \"Hi there, we're sorry to hear you're having trouble checking out. Please try clearing your browser cache or switching browsers. If the issue persists, let us know!\",\n  \"keywords\": [\"checkout\", \"freeze\", \"technical issue\"]\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        680,
+        -60
+      ],
+      "id": "b105f930-b24c-4a83-b6a8-663916b8956d",
+      "name": "customer support agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        540,
+        260
+      ],
+      "id": "3adf1862-a3c2-4d50-b3e1-323c1f91e6a6",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "vZ2wPywYOGvHyKJE",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Retrieve information about customer support FAQs and policies."
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1.1,
+      "position": [
+        760,
+        180
+      ],
+      "id": "b2930709-f6ef-4cc4-8cd7-b3df2b864da6",
+      "name": "Answer questions with a vector store"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "chatgpt-4o-latest"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1020,
+        420
+      ],
+      "id": "780ee27f-60bd-4c47-b950-0efdc5415c6c",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "vZ2wPywYOGvHyKJE",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "support-docs-index",
+          "mode": "list",
+          "cachedResultName": "support-docs-index"
+        },
+        "options": {
+          "pineconeNamespace": "support-docs-index"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        640,
+        420
+      ],
+      "id": "e9cd0830-bdad-437a-92cc-725301511efd",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "Y9gZFv95aC3yKOOr",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        600
+      ],
+      "id": "62a3928b-b2e8-46a2-bf67-ed7bacb11253",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "vZ2wPywYOGvHyKJE",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        320
+      ],
+      "id": "9ea6df42-baa6-4846-b143-6be1918fdaac",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "path": "/Customer-Support-Policy.docx"
+      },
+      "type": "n8n-nodes-base.dropbox",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        320
+      ],
+      "id": "bd0690ff-fe9e-406b-8c0a-66c99f99e33c",
+      "name": "Upload a file",
+      "credentials": {
+        "dropboxOAuth2Api": {
+          "id": "8bRfRC0Eml2rAacu",
+          "name": "Dropbox account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "support-docs-index",
+          "mode": "list",
+          "cachedResultName": "support-docs-index"
+        },
+        "options": {
+          "clearNamespace": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        1940,
+        320
+      ],
+      "id": "566ae29e-9ef8-4874-9df5-c8591ef0a837",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "Y9gZFv95aC3yKOOr",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 1024
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1740,
+        560
+      ],
+      "id": "0d487be5-1ef6-41e9-8123-0a62747bb031",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "vZ2wPywYOGvHyKJE",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1900,
+        560
+      ],
+      "id": "767046e0-3295-41f6-b3f1-f059e665bd3f",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        740
+      ],
+      "id": "56c66b93-a283-4bee-8b40-1ae567db2bba",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cb8720ab-4897-4399-a0c2-2f3eb3242af6",
+              "name": "Pinecone Index",
+              "value": "support-docs-index",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2300,
+        320
+      ],
+      "id": "17d34194-775a-4c30-989e-7885e795b579",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $('Gmail Trigger').item.json.subject }}",
+        "message": "={{ $json.output }}",
+        "options": {
+          "sendTo": "={{ $('Gmail Trigger').item.json.headers.to }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1520,
+        -60
+      ],
+      "id": "2178db70-6623-425e-bd00-d35ca7b043f7",
+      "name": "Create a draft",
+      "webhookId": "9c181f80-e606-48fb-80b7-c2ac455d7594",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gL7jXI1nts8NMUvM",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You will be given a plain response string from another AI system. Your job is to reformat it as a clean, formal, ready-to-send email.\n\nText:\n{{ $json.output }}\nReturn only the email body. Do not include any JSON, quotes, escape characters, brackets, or explanations. Preserve spacing and formatting correctly. The email should be readable, properly paragraph-separated, and professional.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        -60
+      ],
+      "id": "d0a4a14e-78f5-4a8d-94fa-1666262a4698",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1140,
+        160
+      ],
+      "id": "69770b73-79a1-42a9-81b1-cc2b0cd9efb4",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "vZ2wPywYOGvHyKJE",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "set contant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set contant": {
+      "main": [
+        [
+          {
+            "node": "message evaluates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "message evaluates": {
+      "main": [
+        [
+          {
+            "node": "customer support agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "customer support agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer questions with a vector store": {
+      "ai_tool": [
+        [
+          {
+            "node": "customer support agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Upload a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload a file": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "customer support agent": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c426f025-3b98-494b-a107-ec563f38a1a3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e8951baf28f6bd31f85f0e3228323dc8e96ede96aced78ba6d126049a76feae4"
+  },
+  "id": "oA52yJaZZ1Hb6x7v",
+  "tags": []
+}
